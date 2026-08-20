@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Comanda de turno — Cocina unificada (Google Drive)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --paper:#F7F4EC;
+    --paper-edge:#EDE8D9;
+    --ink:#211D18;
+    --ink-soft:#5C574C;
+    --stamp-red:#B23A22;
+    --stamp-green:#2E6B4F;
+    --stamp-amber:#C08A1E;
+    --line:#D8D2C1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 50% 0%, #FCFAF3 0%, var(--paper) 55%, #EFE9DA 100%);
+    font-family:'Courier Prime', monospace;
+    color:var(--ink);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:28px 14px 60px;
+  }
+  .wrap{width:100%;max-width:420px;}
+  .eyebrow{
+    text-align:center;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    text-align:center;
+    font-family:'Archivo Black', sans-serif;
+    font-size:22px;
+    line-height:1.15;
+    margin:0 0 22px;
+    letter-spacing:.01em;
+  }
+
+  .ticket{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow: 0 1px 0 #fff inset, 0 18px 40px -22px rgba(33,29,24,.45);
+    padding:26px 22px 22px;
+  }
+  .ticket::before, .ticket::after{
+    content:"";
+    position:absolute;
+    left:0; right:0;
+    height:9px;
+    background-image: radial-gradient(circle, var(--paper) 4.2px, transparent 4.3px);
+    background-size: 16px 16px;
+    background-position: 0 -4px;
+  }
+  .ticket::before{ top:-5px; }
+  .ticket::after{ bottom:-5px; transform:rotate(180deg); }
+
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  select, input[type=date]{
+    width:100%;
+    font-family:'Courier Prime', monospace;
+    font-weight:700;
+    font-size:16px;
+    padding:11px 10px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    color:var(--ink);
+    appearance:none;
+    -webkit-appearance:none;
+    border-radius:0;
+  }
+  select{
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+    background-position: calc(100% - 18px) center, calc(100% - 12px) center;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat:no-repeat;
+  }
+
+  .daynav{
+    display:flex; align-items:stretch; gap:8px;
+  }
+  .daynav button{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:15px;
+    width:40px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .daynav button:active{ background:var(--ink); color:var(--paper); }
+  .daynav input[type=date]{ flex:1; text-align:center; }
+
+  .divider{
+    border:none; border-top:1px dashed var(--line);
+    margin:20px 0;
+  }
+
+  .datelabel{
+    text-align:center;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:16px;
+  }
+
+  .stampzone{
+    display:flex;
+    justify-content:center;
+    padding:10px 0 18px;
+    min-height:118px;
+    align-items:center;
+  }
+  .stamp{
+    border:3px solid var(--stamp-green);
+    color:var(--stamp-green);
+    font-family:'Archivo Black', sans-serif;
+    font-size:22px;
+    line-height:1.25;
+    text-align:center;
+    padding:14px 18px;
+    transform:rotate(-3deg) scale(1);
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    animation: stampdown .28s cubic-bezier(.2,1.4,.4,1);
+    max-width:100%;
+  }
+  .stamp.libre{
+    border-color:var(--stamp-amber);
+    color:var(--stamp-amber);
+  }
+  .stamp.outofrange, .stamp.loading, .stamp.error{
+    border-color:var(--ink-soft);
+    color:var(--ink-soft);
+    font-size:14px;
+    font-family:'Space Mono', monospace;
+    text-transform:none;
+    transform:rotate(0deg);
+    line-height:1.5;
+  }
+  .stamp.error{ border-color:var(--stamp-red); color:var(--stamp-red); }
+  @keyframes stampdown{
+    0%{ transform:rotate(-3deg) scale(1.6); opacity:0; }
+    60%{ opacity:1; }
+    100%{ transform:rotate(-3deg) scale(1); opacity:1; }
+  }
+
+  .team{ margin-top:4px; }
+  .team-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 0;
+    border-bottom:1px dotted var(--line);
+    font-size:13px;
+  }
+  .row:last-child{ border-bottom:none; }
+  .row .name{ font-weight:700; }
+  .row.me{ color:var(--stamp-red); }
+  .row .role{ text-align:right; color:var(--ink-soft); }
+  .row.me .role{ color:var(--stamp-red); font-weight:700; }
+  .row .role.off{ font-style:italic; }
+
+  .footer{
+    text-align:center;
+    margin-top:22px;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    letter-spacing:.06em;
+  }
+  .refresh{
+    display:block;
+    margin:14px auto 0;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    background:none;
+    border:1px solid var(--ink-soft);
+    color:var(--ink-soft);
+    padding:6px 12px;
+    cursor:pointer;
+  }
+  .refresh:active{ background:var(--ink-soft); color:var(--paper); }
+
+  .setup{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    text-align:left;
+  }
+  .setup b{ color:var(--ink); }
+  .setup ol{ padding-left:18px; margin:8px 0; }
+
+  @media (prefers-reduced-motion: reduce){
+    .stamp{ animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Bendito Capricho · Cocina unificada</div>
+  <h1>Comanda de turno</h1>
+
+  <div class="ticket">
+    <div class="field">
+      <label for="cook">Tu nombre</label>
+      <select id="cook"></select>
+    </div>
+
+    <div class="field">
+      <label for="datein">Fecha a consultar</label>
+      <div class="daynav">
+        <button type="button" id="prevDay" aria-label="Día anterior">‹</button>
+        <input type="date" id="datein">
+        <button type="button" id="nextDay" aria-label="Día siguiente">›</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="datelabel" id="daylabel">—</div>
+    <div class="stampzone" id="stampzone"><div class="stamp loading">Cargando cronograma desde Google Sheets…</div></div>
+
+    <hr class="divider">
+
+    <div class="team">
+      <div class="team-title"><span>Equipo completo ese día</span><span id="totalturno"></span></div>
+      <div id="teamlist"></div>
+    </div>
+
+    <button type="button" class="refresh" id="refreshBtn">↻ Recargar datos</button>
+  </div>
+
+  <div class="footer" id="footer">Fuente: Google Sheets (hoja publicada)</div>
+</div>
+
+<script>
+/* ============================================================
+   CONEXIÓN CON GOOGLE DRIVE
+   ============================================================
+   Esta comanda lee en vivo la hoja "Cronograma cocina unificada
+   (ago-dic 2026)" creada en tu Google Drive. El enlace usa el
+   export CSV directo de Google Sheets (sin necesidad de
+   "Publicar en la web").
+   IMPORTANTE: para que cargue desde cualquier celular, la hoja
+   debe estar compartida como "Cualquiera con el enlace - Lector".
+   Ábrela aquí: https://docs.google.com/spreadsheets/d/1gv2s28UopnHt-L4RmQyDKYiJpdtV6eNAMlK0EafmH94/edit
+   y revisa el botón "Compartir" arriba a la derecha.
+   Cada vez que edites una celda en esa hoja, esta página lo
+   refleja al instante (no hay que republicar nada).
+   ============================================================ */
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1gv2s28UopnHt-L4RmQyDKYiJpdtV6eNAMlK0EafmH94/export?format=csv&gid=0";
+
+const PEOPLE = ["Kelly","Amelia","Mariza","Leydy","Yanci","Kendi"];
+
+let SCHEDULE = {};      // "YYYY-MM-DD" -> { Kelly:"TURNO", ... , total:"4" }
+let DATES = [];         // sorted list of "YYYY-MM-DD" available in the sheet
+let LOADED = false;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function toISO(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function dateOnly(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function addDays(d, n){ const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+const DIA_ES = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+
+// Accepts "2026-08-24", "8/24/2026", "24/08/2026" and returns "YYYY-MM-DD" or null
+function parseFlexibleDate(raw){
+  if(!raw) return null;
+  raw = String(raw).trim();
+  let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){
+    // ambiguous M/D vs D/M — Google's US locale CSV export uses M/D/YYYY
+    return `${m[3]}-${pad(+m[1])}-${pad(+m[2])}`;
+  }
+  const d = new Date(raw);
+  if(!isNaN(d)) return toISO(d);
+  return null;
+}
+
+const cookSel = document.getElementById('cook');
+PEOPLE.forEach(n=>{
+  const opt = document.createElement('option');
+  opt.value = n; opt.textContent = n;
+  cookSel.appendChild(opt);
+});
+
+const dateInput = document.getElementById('datein');
+const stampzone = document.getElementById('stampzone');
+const daylabel = document.getElementById('daylabel');
+const teamlist = document.getElementById('teamlist');
+const totalturno = document.getElementById('totalturno');
+const footer = document.getElementById('footer');
+
+function showMessage(cls, html){
+  stampzone.innerHTML = `<div class="stamp ${cls}">${html}</div>`;
+  teamlist.innerHTML = '';
+  totalturno.textContent = '';
+}
+
+function showSetupInstructions(){
+  daylabel.textContent = '—';
+  stampzone.innerHTML = `<div class="stamp error" style="text-align:left">
+    <div class="setup">
+      <b>Falta conectar la hoja de Google.</b>
+      <ol>
+        <li>Crea o pega el enlace de tu Google Sheet en la constante <b>SHEET_CSV_URL</b> dentro del archivo HTML.</li>
+        <li>Asegúrate de que la hoja esté compartida como "Cualquiera con el enlace - Lector".</li>
+      </ol>
+    </div>
+  </div>`;
+  teamlist.innerHTML = '';
+  totalturno.textContent = '';
+}
+
+function loadSchedule(){
+  if(!SHEET_CSV_URL || SHEET_CSV_URL.indexOf('PEGA_AQUI') !== -1){
+    showSetupInstructions();
+    return;
+  }
+  showMessage('loading', 'Cargando cronograma desde Google Sheets…');
+  Papa.parse(SHEET_CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results){
+      try{
+        const rows = results.data;
+        SCHEDULE = {};
+        rows.forEach(r=>{
+          const iso = parseFlexibleDate(r['Fecha']);
+          if(!iso) return;
+          const entry = { total: r['Total en turno'] || '' };
+          PEOPLE.forEach(p=>{ entry[p] = (r[p] || '').trim().toUpperCase(); });
+          SCHEDULE[iso] = entry;
+        });
+        DATES = Object.keys(SCHEDULE).sort();
+        if(DATES.length === 0){
+          showMessage('error', 'No se encontraron filas de fechas en la hoja. Revisa que la hoja publicada sea "Cronograma".');
+          return;
+        }
+        LOADED = true;
+        dateInput.min = DATES[0];
+        dateInput.max = DATES[DATES.length-1];
+        footer.textContent = `Cronograma vigente: ${DATES[0]} – ${DATES[DATES.length-1]} · datos en vivo desde Google Sheets`;
+        if(!dateInput.value){
+          const today = toISO(dateOnly(new Date()));
+          dateInput.value = SCHEDULE[today] ? today : (today < DATES[0] ? DATES[0] : DATES[DATES.length-1]);
+        }
+        render();
+      }catch(e){
+        showMessage('error', 'No se pudo leer el formato de la hoja. Verifica los encabezados de columna.');
+      }
+    },
+    error: function(){
+      showMessage('error', 'No se pudo conectar con Google Sheets. Revisa que la hoja esté compartida como "Cualquiera con el enlace" y tu conexión a internet.');
+    }
+  });
+}
+
+function render(){
+  if(!LOADED) return;
+  const iso = dateInput.value;
+  const who = cookSel.value;
+  const d = new Date(iso + 'T00:00:00');
+
+  const wdName = DIA_ES[(d.getDay()+6)%7];
+  const fechaTxt = d.toLocaleDateString('es-CO', {day:'numeric', month:'long', year:'numeric'});
+  daylabel.textContent = `${wdName} · ${fechaTxt}`;
+
+  const entry = SCHEDULE[iso];
+  if(!entry){
+    showMessage('outofrange', `Esta fecha está fuera<br>del cronograma publicado<br>(${DATES[0]} – ${DATES[DATES.length-1]})`);
+    return;
+  }
+
+  const myStatus = entry[who] || '—';
+  const isLibre = myStatus === 'LIBRE';
+
+  stampzone.innerHTML = '';
+  const stamp = document.createElement('div');
+  stamp.className = 'stamp' + (isLibre ? ' libre' : '');
+  stamp.innerHTML = isLibre
+    ? `LIBRE HOY<span class="sub">${who}</span>`
+    : `TURNO HOY<span class="sub">${who}</span>`;
+  stampzone.appendChild(stamp);
+
+  totalturno.textContent = entry.total ? `${entry.total} en turno` : '';
+
+  teamlist.innerHTML = '';
+  PEOPLE.forEach(name=>{
+    const status = entry[name] || '—';
+    const off = status === 'LIBRE';
+    const row = document.createElement('div');
+    row.className = 'row' + (name===who ? ' me' : '');
+    row.innerHTML = `<span class="name">${name}</span><span class="role${off?' off':''}">${off ? 'Libre' : 'Turno'}</span>`;
+    teamlist.appendChild(row);
+  });
+}
+
+document.getElementById('prevDay').addEventListener('click', ()=>{
+  if(!LOADED) return;
+  const d = new Date(dateInput.value + 'T00:00:00');
+  const nd = addDays(d,-1);
+  const iso = toISO(nd);
+  if(iso >= DATES[0]) dateInput.value = iso;
+  render();
+});
+document.getElementById('nextDay').addEventListener('click', ()=>{
+  if(!LOADED) return;
+  const d = new Date(dateInput.value + 'T00:00:00');
+  const nd = addDays(d,1);
+  const iso = toISO(nd);
+  if(iso <= DATES[DATES.length-1]) dateInput.value = iso;
+  render();
+});
+dateInput.addEventListener('change', render);
+cookSel.addEventListener('change', render);
+document.getElementById('refreshBtn').addEventListener('click', loadSchedule);
+
+loadSchedule();
+</script>
+</body>
+</html>
