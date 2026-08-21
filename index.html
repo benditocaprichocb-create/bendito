@@ -595,7 +595,7 @@ function render(){
   const stamp = document.createElement('div');
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
-    ? `LIBRE HOY<span class="sub">${who}</span>`
+    ? `LIBRE HOY <span class="sub">${who}</span>`
     : `${myStatus}<span class="sub">Turno de ${who}</span>`;
   stampzone.appendChild(stamp);
 
