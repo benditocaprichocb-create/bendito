@@ -3,38 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Comanda de turno — Cocina unificada (Google Drive)</title>
+<title>Comanda de turno — Cocina unificada</title>
+<meta name="description" content="Consulta tu turno de hoy y tus días libres del mes — Bendito Capricho, cocina unificada.">
+
+<!-- Vista previa para WhatsApp / redes sociales (Open Graph) -->
+<meta property="og:title" content="Comanda de turno — Bendito Capricho">
+<meta property="og:description" content="Consulta tu turno de hoy y tus días libres del mes.">
+<meta property="og:image" content="https://benditocaprichocb-create.github.io/bendito/og-image.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://benditocaprichocb-create.github.io/bendito/">
+<meta name="twitter:card" content="summary_large_image">
+
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Comanda">
+<link rel="apple-touch-icon" href="og-image.png">
+
+<!-- Nota: la tipografía de marca (LEMON MiLK / Mont) no está disponible en Google Fonts.
+     Se usa Poppins como reemplazo más cercano: geométrica y de peso similar. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
-    --paper:#F7F4EC;
-    --paper-edge:#EDE8D9;
-    --ink:#211D18;
-    --ink-soft:#5C574C;
-    --stamp-red:#B23A22;
-    --stamp-green:#2E6B4F;
-    --stamp-amber:#C08A1E;
-    --line:#D8D2C1;
+    /* Paleta oficial Bendito Capricho */
+    --negro:#000000;
+    --vino:#9d0320;
+    --dorado:#d8c290;
+    --dorado-texto:#8a6e34;
+    --gris:#7b7d82;
+    --gris-claro:#e7e8ea;
+
+    --paper:#FFFFFF;
+    --paper-edge:#e7e8ea;
+    --ink:#000000;
+    --ink-soft:#7b7d82;
+    --stamp-red:#9d0320;
+    --stamp-green:#9d0320;
+    --stamp-amber:#8a6e34;
+    --line:#e7e8ea;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
   body{
     min-height:100vh;
-    background:
-      radial-gradient(circle at 50% 0%, #FCFAF3 0%, var(--paper) 55%, #EFE9DA 100%);
-    font-family:'Courier Prime', monospace;
+    min-height:100dvh;
+    background:var(--gris-claro);
+    font-family:'Poppins', sans-serif;
     color:var(--ink);
     display:flex;
     align-items:flex-start;
     justify-content:center;
-    padding:28px 14px 60px;
+    padding:20px 12px 50px;
   }
   .wrap{width:100%;max-width:420px;}
   .eyebrow{
     text-align:center;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
+    font-weight:700;
     font-size:11px;
     letter-spacing:.18em;
     color:var(--ink-soft);
@@ -43,7 +70,8 @@
   }
   h1{
     text-align:center;
-    font-family:'Archivo Black', sans-serif;
+    font-family:'Poppins', sans-serif;
+    font-weight:900;
     font-size:22px;
     line-height:1.15;
     margin:0 0 22px;
@@ -54,7 +82,7 @@
     position:relative;
     background:var(--paper);
     border:1px solid var(--line);
-    box-shadow: 0 1px 0 #fff inset, 0 18px 40px -22px rgba(33,29,24,.45);
+    box-shadow: 0 1px 0 #fff inset, 0 18px 40px -22px rgba(0,0,0,.35);
     padding:26px 22px 22px;
   }
   .ticket::before, .ticket::after{
@@ -72,7 +100,8 @@
   .field{ margin-bottom:16px; }
   .field label{
     display:block;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
     font-size:10px;
     letter-spacing:.14em;
     text-transform:uppercase;
@@ -81,7 +110,7 @@
   }
   select, input[type=date]{
     width:100%;
-    font-family:'Courier Prime', monospace;
+    font-family:'Poppins', sans-serif;
     font-weight:700;
     font-size:16px;
     padding:11px 10px;
@@ -103,10 +132,11 @@
     display:flex; align-items:stretch; gap:8px;
   }
   .daynav button{
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-weight:700;
-    font-size:15px;
-    width:40px;
+    font-size:18px;
+    width:46px;
+    min-height:44px;
     background:#fff;
     border:1.5px solid var(--ink);
     color:var(--ink);
@@ -122,7 +152,8 @@
 
   .datelabel{
     text-align:center;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
     font-size:11px;
     letter-spacing:.1em;
     text-transform:uppercase;
@@ -140,7 +171,8 @@
   .stamp{
     border:3px solid var(--stamp-green);
     color:var(--stamp-green);
-    font-family:'Archivo Black', sans-serif;
+    font-family:'Poppins', sans-serif;
+    font-weight:800;
     font-size:22px;
     line-height:1.25;
     text-align:center;
@@ -159,7 +191,7 @@
     border-color:var(--ink-soft);
     color:var(--ink-soft);
     font-size:14px;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     text-transform:none;
     transform:rotate(0deg);
     line-height:1.5;
@@ -174,7 +206,8 @@
   .team{ margin-top:4px; }
   .team-title{
     display:flex; align-items:baseline; justify-content:space-between;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
     font-size:10px;
     letter-spacing:.14em;
     text-transform:uppercase;
@@ -199,7 +232,7 @@
   .footer{
     text-align:center;
     margin-top:22px;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:10px;
     color:var(--ink-soft);
     letter-spacing:.06em;
@@ -207,20 +240,22 @@
   .refresh{
     display:block;
     margin:14px auto 0;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
     font-size:10px;
     letter-spacing:.1em;
     text-transform:uppercase;
     background:none;
     border:1px solid var(--ink-soft);
     color:var(--ink-soft);
-    padding:6px 12px;
+    padding:10px 16px;
+    min-height:40px;
     cursor:pointer;
   }
   .refresh:active{ background:var(--ink-soft); color:var(--paper); }
 
   .setup{
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:11px;
     line-height:1.6;
     color:var(--ink-soft);
@@ -238,12 +273,13 @@
     flex:1;
     background:#fff;
     border:none;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:10px;
     letter-spacing:.06em;
     text-transform:uppercase;
     font-weight:700;
-    padding:11px 4px;
+    padding:13px 4px;
+    min-height:44px;
     color:var(--ink-soft);
     cursor:pointer;
   }
@@ -259,10 +295,11 @@
     margin-bottom:14px;
   }
   .cal-head button{
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-weight:700;
-    font-size:15px;
-    width:36px;
+    font-size:18px;
+    width:42px;
+    min-height:44px;
     background:#fff;
     border:1.5px solid var(--ink);
     color:var(--ink);
@@ -270,7 +307,8 @@
   }
   .cal-head button:active{ background:var(--ink); color:var(--paper); }
   .cal-head .monthlabel{
-    font-family:'Archivo Black', sans-serif;
+    font-family:'Poppins', sans-serif;
+    font-weight:800;
     font-size:15px;
     letter-spacing:.02em;
     text-transform:uppercase;
@@ -283,7 +321,7 @@
     gap:4px;
   }
   .calgrid .dow{
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:9px;
     text-align:center;
     color:var(--ink-soft);
@@ -295,7 +333,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:12px;
     font-weight:700;
     border:1px solid var(--line);
@@ -315,7 +353,7 @@
     align-items:center;
     justify-content:center;
     gap:6px;
-    font-family:'Space Mono', monospace;
+    font-family:'Poppins', sans-serif;
     font-size:10px;
     color:var(--ink-soft);
     margin-top:14px;
@@ -595,7 +633,7 @@ function render(){
   const stamp = document.createElement('div');
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
-    ? `LIBRE HOY <span class="sub">${who}</span>`
+    ? `LIBRE HOY<span class="sub">${who}</span>`
     : `${myStatus}<span class="sub"></span>`;
   stampzone.appendChild(stamp);
 
