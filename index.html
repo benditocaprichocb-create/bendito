@@ -288,8 +288,9 @@
    refleja al instante (no hay que republicar nada).
    ============================================================ */
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1gv2s28UopnHt-L4RmQyDKYiJpdtV6eNAMlK0EafmH94/gviz/tq?tqx=out:csv&gid=0";
-  
-const PEOPLE = ["Kelly","Amelia","Mariza","Leydy","Yanci","Kendi"];
+
+const NON_PERSON_COLUMNS = ["Fecha","Día","Total en turno"];
+let PEOPLE = [];        // se llena automáticamente desde los encabezados de la hoja
 
 let SCHEDULE = {};      // "YYYY-MM-DD" -> { Kelly:"TURNO", ... , total:"4" }
 let DATES = [];         // sorted list of "YYYY-MM-DD" available in the sheet
@@ -319,11 +320,6 @@ function parseFlexibleDate(raw){
 }
 
 const cookSel = document.getElementById('cook');
-PEOPLE.forEach(n=>{
-  const opt = document.createElement('option');
-  opt.value = n; opt.textContent = n;
-  cookSel.appendChild(opt);
-});
 
 const dateInput = document.getElementById('datein');
 const stampzone = document.getElementById('stampzone');
@@ -366,6 +362,25 @@ function loadSchedule(){
     complete: function(results){
       try{
         const rows = results.data;
+        const headerFields = results.meta.fields || [];
+        PEOPLE = headerFields.filter(f => f && NON_PERSON_COLUMNS.indexOf(f) === -1);
+
+        if(PEOPLE.length === 0){
+          showMessage('error', 'No se encontraron columnas de personas en la hoja. Revisa los encabezados (Fecha, Día, nombres, Total en turno).');
+          return;
+        }
+
+        const previousCook = cookSel.value;
+        cookSel.innerHTML = '';
+        PEOPLE.forEach(n=>{
+          const opt = document.createElement('option');
+          opt.value = n; opt.textContent = n;
+          cookSel.appendChild(opt);
+        });
+        if(previousCook && PEOPLE.indexOf(previousCook) !== -1){
+          cookSel.value = previousCook;
+        }
+
         SCHEDULE = {};
         rows.forEach(r=>{
           const iso = parseFlexibleDate(r['Fecha']);
@@ -422,7 +437,7 @@ function render(){
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
     ? `LIBRE HOY<span class="sub">${who}</span>`
-    : `TURNO HOY<span class="sub">${who}</span>`;
+    : `${myStatus}<span class="sub">Oficio de ${who}</span>`;
   stampzone.appendChild(stamp);
 
   totalturno.textContent = entry.total ? `${entry.total} en turno` : '';
@@ -433,7 +448,7 @@ function render(){
     const off = status === 'LIBRE';
     const row = document.createElement('div');
     row.className = 'row' + (name===who ? ' me' : '');
-    row.innerHTML = `<span class="name">${name}</span><span class="role${off?' off':''}">${off ? 'Libre' : 'Turno'}</span>`;
+    row.innerHTML = `<span class="name">${name}</span><span class="role${off?' off':''}">${off ? 'Libre' : status}</span>`;
     teamlist.appendChild(row);
   });
 }
