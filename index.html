@@ -229,6 +229,104 @@
   .setup b{ color:var(--ink); }
   .setup ol{ padding-left:18px; margin:8px 0; }
 
+  .tabs{
+    display:flex;
+    margin-bottom:18px;
+    border:1.5px solid var(--ink);
+  }
+  .tabs button{
+    flex:1;
+    background:#fff;
+    border:none;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    font-weight:700;
+    padding:11px 4px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .tabs button:not(:last-child){ border-right:1.5px solid var(--ink); }
+  .tabs button.active{ background:var(--ink); color:var(--paper); }
+
+  .view.hidden{ display:none; }
+
+  .cal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .cal-head button{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:15px;
+    width:36px;
+    background:#fff;
+    border:1.5px solid var(--ink);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .cal-head button:active{ background:var(--ink); color:var(--paper); }
+  .cal-head .monthlabel{
+    font-family:'Archivo Black', sans-serif;
+    font-size:15px;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    text-align:center;
+    flex:1;
+  }
+  .calgrid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .calgrid .dow{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    text-align:center;
+    color:var(--ink-soft);
+    letter-spacing:.03em;
+    padding-bottom:4px;
+  }
+  .calgrid .day{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+  }
+  .calgrid .day.empty{ border:none; background:transparent; }
+  .calgrid .day.libre{
+    background:var(--stamp-amber);
+    border-color:var(--stamp-amber);
+    color:#fff;
+  }
+  .calgrid .day.today{ outline:2px solid var(--stamp-red); outline-offset:-2px; }
+
+  .cal-legend{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-top:14px;
+  }
+  .cal-legend .swatch{
+    width:12px; height:12px;
+    background:var(--stamp-amber);
+    display:inline-block;
+    border:1px solid var(--stamp-amber);
+  }
+
   @media (prefers-reduced-motion: reduce){
     .stamp{ animation:none; }
   }
@@ -240,6 +338,12 @@
   <h1>Comanda de turno</h1>
 
   <div class="ticket">
+    <div class="tabs">
+      <button type="button" id="tabTurnoBtn" class="active">Turno del día</button>
+      <button type="button" id="tabDescansosBtn">Descansos del mes</button>
+    </div>
+
+    <div class="view" id="viewTurno">
     <div class="field">
       <label for="cook">Tu nombre</label>
       <select id="cook"></select>
@@ -264,6 +368,24 @@
     <div class="team">
       <div class="team-title"><span>Equipo completo ese día</span><span id="totalturno"></span></div>
       <div id="teamlist"></div>
+    </div>
+    </div>
+
+    <div class="view hidden" id="viewDescansos">
+      <div class="field">
+        <label for="cookCal">Cocinera</label>
+        <select id="cookCal"></select>
+      </div>
+
+      <hr class="divider">
+
+      <div class="cal-head">
+        <button type="button" id="prevMonth" aria-label="Mes anterior">‹</button>
+        <div class="monthlabel" id="monthlabel">—</div>
+        <button type="button" id="nextMonth" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="calgrid" id="calgrid"></div>
+      <div class="cal-legend"><span class="swatch"></span> Día libre</div>
     </div>
 
     <button type="button" class="refresh" id="refreshBtn">↻ Recargar datos</button>
@@ -320,6 +442,7 @@ function parseFlexibleDate(raw){
 }
 
 const cookSel = document.getElementById('cook');
+const cookCalSel = document.getElementById('cookCal');
 
 const dateInput = document.getElementById('datein');
 const stampzone = document.getElementById('stampzone');
@@ -327,6 +450,29 @@ const daylabel = document.getElementById('daylabel');
 const teamlist = document.getElementById('teamlist');
 const totalturno = document.getElementById('totalturno');
 const footer = document.getElementById('footer');
+
+const tabTurnoBtn = document.getElementById('tabTurnoBtn');
+const tabDescansosBtn = document.getElementById('tabDescansosBtn');
+const viewTurno = document.getElementById('viewTurno');
+const viewDescansos = document.getElementById('viewDescansos');
+const monthlabel = document.getElementById('monthlabel');
+const calgrid = document.getElementById('calgrid');
+
+let calYear = null, calMonth = null; // calMonth: 0-11
+
+tabTurnoBtn.addEventListener('click', ()=>{
+  tabTurnoBtn.classList.add('active');
+  tabDescansosBtn.classList.remove('active');
+  viewTurno.classList.remove('hidden');
+  viewDescansos.classList.add('hidden');
+});
+tabDescansosBtn.addEventListener('click', ()=>{
+  tabDescansosBtn.classList.add('active');
+  tabTurnoBtn.classList.remove('active');
+  viewDescansos.classList.remove('hidden');
+  viewTurno.classList.add('hidden');
+  if(LOADED) renderCalendar();
+});
 
 function showMessage(cls, html){
   stampzone.innerHTML = `<div class="stamp ${cls}">${html}</div>`;
@@ -371,14 +517,22 @@ function loadSchedule(){
         }
 
         const previousCook = cookSel.value;
+        const previousCalCook = cookCalSel.value;
         cookSel.innerHTML = '';
+        cookCalSel.innerHTML = '';
         PEOPLE.forEach(n=>{
           const opt = document.createElement('option');
           opt.value = n; opt.textContent = n;
           cookSel.appendChild(opt);
+          const opt2 = document.createElement('option');
+          opt2.value = n; opt2.textContent = n;
+          cookCalSel.appendChild(opt2);
         });
         if(previousCook && PEOPLE.indexOf(previousCook) !== -1){
           cookSel.value = previousCook;
+        }
+        if(previousCalCook && PEOPLE.indexOf(previousCalCook) !== -1){
+          cookCalSel.value = previousCalCook;
         }
 
         SCHEDULE = {};
@@ -402,7 +556,12 @@ function loadSchedule(){
           const today = toISO(dateOnly(new Date()));
           dateInput.value = SCHEDULE[today] ? today : (today < DATES[0] ? DATES[0] : DATES[DATES.length-1]);
         }
+        if(calYear === null){
+          const [fy, fm] = dateInput.value.split('-').map(Number);
+          calYear = fy; calMonth = fm - 1;
+        }
         render();
+        if(!viewDescansos.classList.contains('hidden')) renderCalendar();
       }catch(e){
         showMessage('error', 'No se pudo leer el formato de la hoja. Verifica los encabezados de columna.');
       }
@@ -437,7 +596,7 @@ function render(){
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
     ? `LIBRE HOY<span class="sub">${who}</span>`
-    : `${myStatus}<span class="sub">Oficio de ${who}</span>`;
+    : `${myStatus}<span class="sub">Turno de ${who}</span>`;
   stampzone.appendChild(stamp);
 
   totalturno.textContent = entry.total ? `${entry.total} en turno` : '';
@@ -452,6 +611,56 @@ function render(){
     teamlist.appendChild(row);
   });
 }
+
+const MES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DOW_ES = ["L","M","M","J","V","S","D"];
+
+function renderCalendar(){
+  if(!LOADED || calYear === null) return;
+  const who = cookCalSel.value;
+  monthlabel.textContent = `${MES_ES[calMonth]} ${calYear}`;
+
+  const firstOfMonth = new Date(calYear, calMonth, 1);
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const leadingBlanks = (firstOfMonth.getDay() + 6) % 7; // Mon=0..Sun=6
+  const todayISO = toISO(dateOnly(new Date()));
+
+  calgrid.innerHTML = '';
+  DOW_ES.forEach(d=>{
+    const el = document.createElement('div');
+    el.className = 'dow';
+    el.textContent = d;
+    calgrid.appendChild(el);
+  });
+  for(let i=0;i<leadingBlanks;i++){
+    const el = document.createElement('div');
+    el.className = 'day empty';
+    calgrid.appendChild(el);
+  }
+  for(let day=1; day<=daysInMonth; day++){
+    const iso = `${calYear}-${pad(calMonth+1)}-${pad(day)}`;
+    const entry = SCHEDULE[iso];
+    const el = document.createElement('div');
+    let cls = 'day';
+    if(entry && entry[who] === 'LIBRE') cls += ' libre';
+    if(iso === todayISO) cls += ' today';
+    el.className = cls;
+    el.textContent = day;
+    calgrid.appendChild(el);
+  }
+}
+
+document.getElementById('prevMonth').addEventListener('click', ()=>{
+  calMonth--;
+  if(calMonth < 0){ calMonth = 11; calYear--; }
+  renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', ()=>{
+  calMonth++;
+  if(calMonth > 11){ calMonth = 0; calYear++; }
+  renderCalendar();
+});
+cookCalSel.addEventListener('change', renderCalendar);
 
 document.getElementById('prevDay').addEventListener('click', ()=>{
   if(!LOADED) return;
