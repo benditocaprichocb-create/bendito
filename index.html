@@ -10,9 +10,14 @@
 <meta property="og:title" content="Comanda de turno — Bendito Capricho">
 <meta property="og:description" content="Consulta tu turno de hoy y tus días libres del mes.">
 <meta property="og:image" content="https://benditocaprichocb-create.github.io/bendito/og-image.png">
+<meta property="og:image:secure_url" content="https://benditocaprichocb-create.github.io/bendito/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://benditocaprichocb-create.github.io/bendito/">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://benditocaprichocb-create.github.io/bendito/og-image.png">
 
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -368,6 +373,39 @@
   @media (prefers-reduced-motion: reduce){
     .stamp{ animation:none; }
   }
+
+  .pw-submit{
+    width:100%;
+    font-family:'Poppins', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    background:var(--vino);
+    color:#fff;
+    border:none;
+    padding:13px 10px;
+    min-height:46px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .pw-submit:active{ opacity:.85; }
+  .pw-error{
+    font-family:'Poppins', sans-serif;
+    font-size:12px;
+    color:var(--vino);
+    margin:-6px 0 10px;
+  }
+  .pw-error.hidden{ display:none; }
+  .pw-hint{
+    font-family:'Poppins', sans-serif;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:14px;
+    min-height:14px;
+  }
+  #gate.hidden{ display:none; }
 </style>
 </head>
 <body>
@@ -375,7 +413,17 @@
   <div class="eyebrow">Bendito Capricho · Cocina unificada</div>
   <h1>Comanda de turno</h1>
 
-  <div class="ticket">
+  <div class="ticket" id="gate">
+    <div class="field">
+      <label for="pwInput">Contraseña del equipo</label>
+      <input type="password" id="pwInput" placeholder="••••••••" autocomplete="off">
+    </div>
+    <div id="pwError" class="pw-error hidden">Contraseña incorrecta, intenta de nuevo.</div>
+    <button type="button" class="pw-submit" id="pwSubmit">Entrar</button>
+    <div class="pw-hint" id="pwHint"></div>
+  </div>
+
+  <div class="ticket hidden" id="appContent">
     <div class="tabs">
       <button type="button" id="tabTurnoBtn" class="active">Turno del día</button>
       <button type="button" id="tabDescansosBtn">Descansos del mes</button>
@@ -448,6 +496,77 @@
    refleja al instante (no hay que republicar nada).
    ============================================================ */
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1gv2s28UopnHt-L4RmQyDKYiJpdtV6eNAMlK0EafmH94/gviz/tq?tqx=out:csv&gid=0";
+
+/* ============================================================
+   CONTRASEÑA DE ACCESO
+   ============================================================
+   La contraseña se lee de la primera celda con contenido en una
+   pestaña llamada "Config" en la misma hoja de Google. Para
+   cambiarla, solo edita esa celda — no hace falta tocar este
+   archivo.
+   IMPORTANTE: esto NO es seguridad real (cualquiera con algo de
+   conocimiento técnico puede ver el valor en el CSV público). Es
+   solo una pantalla para que el link no se abra por accidente si
+   circula fuera del equipo.
+   ============================================================ */
+const CONFIG_CSV_URL = "https://docs.google.com/spreadsheets/d/1gv2s28UopnHt-L4RmQyDKYiJpdtV6eNAMlK0EafmH94/gviz/tq?tqx=out:csv&sheet=Config";
+
+const gateEl = document.getElementById('gate');
+const appContentEl = document.getElementById('appContent');
+const pwInput = document.getElementById('pwInput');
+const pwError = document.getElementById('pwError');
+const pwHint = document.getElementById('pwHint');
+const pwSubmit = document.getElementById('pwSubmit');
+
+let REQUIRED_PASSWORD = null;
+
+function loadPassword(){
+  pwHint.textContent = 'Verificando…';
+  Papa.parse(CONFIG_CSV_URL, {
+    download: true,
+    complete: function(results){
+      const rows = results.data;
+      REQUIRED_PASSWORD = null;
+      for(const row of rows){
+        if(row && row[0] && String(row[0]).trim() !== ''){
+          REQUIRED_PASSWORD = String(row[0]).trim();
+          break;
+        }
+      }
+      pwHint.textContent = '';
+      if(!REQUIRED_PASSWORD){
+        pwHint.textContent = 'No se encontró una contraseña configurada en la hoja "Config".';
+      }
+    },
+    error: function(){
+      pwHint.textContent = 'No se pudo verificar la contraseña. Revisa tu conexión e intenta de nuevo.';
+    }
+  });
+}
+
+function tryUnlock(){
+  const val = pwInput.value.trim();
+  if(REQUIRED_PASSWORD === null){
+    pwHint.textContent = 'Todavía estamos verificando, espera un segundo e intenta de nuevo.';
+    return;
+  }
+  if(val !== '' && val === REQUIRED_PASSWORD){
+    gateEl.classList.add('hidden');
+    appContentEl.classList.remove('hidden');
+    loadSchedule();
+  } else {
+    pwError.classList.remove('hidden');
+    pwInput.value = '';
+    pwInput.focus();
+  }
+}
+
+pwSubmit.addEventListener('click', tryUnlock);
+pwInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') tryUnlock();
+  pwError.classList.add('hidden');
+});
+loadPassword();
 
 const NON_PERSON_COLUMNS = ["Fecha","Día","Total en turno"];
 let PEOPLE = [];        // se llena automáticamente desde los encabezados de la hoja
@@ -634,7 +753,7 @@ function render(){
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
     ? `LIBRE HOY<span class="sub">${who}</span>`
-    : `${myStatus}<span class="sub"></span>`;
+    : `${myStatus}<span class="sub">Turno de ${who}</span>`;
   stampzone.appendChild(stamp);
 
   totalturno.textContent = entry.total ? `${entry.total} en turno` : '';
@@ -719,8 +838,6 @@ document.getElementById('nextDay').addEventListener('click', ()=>{
 dateInput.addEventListener('change', render);
 cookSel.addEventListener('change', render);
 document.getElementById('refreshBtn').addEventListener('click', loadSchedule);
-
-loadSchedule();
 </script>
 </body>
 </html>
