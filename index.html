@@ -411,7 +411,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Bendito Capricho · Cocina unificada</div>
+  <div class="eyebrow">Congelato · Cocina Bar</div>
   <h1>Comanda de turno</h1>
 
   <div class="ticket" id="gate">
@@ -754,7 +754,7 @@ function render(){
   stamp.className = 'stamp' + (isLibre ? ' libre' : '');
   stamp.innerHTML = isLibre
     ? `LIBRE HOY<span class="sub">${who}</span>`
-    : `${myStatus}<span class="sub">Turno de ${who}</span>`;
+    : `${myStatus}<span class="sub"></span>Turno de ${who}</span>`;
   stampzone.appendChild(stamp);
 
   totalturno.textContent = entry.total ? `${entry.total} en turno` : '';
